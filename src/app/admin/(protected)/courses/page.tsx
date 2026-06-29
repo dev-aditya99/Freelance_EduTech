@@ -15,8 +15,10 @@ export enum ICourseView {
 
 export default function CoursesPage() {
   const { fetchCourses, searchQuery, statusFilter } = useCourseStore();
-  const [view, setView] = useState<ICourseView>(
-    localStorage.getItem("course_view"),
+  const storedView = localStorage.getItem("course_view");
+
+  const [view, setView] = useState<ICourseView | null>(
+    storedView ? (JSON.parse(storedView) as ICourseView) : null,
   );
 
   useEffect(() => {

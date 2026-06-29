@@ -77,7 +77,7 @@ export default function CourseDetailPage({
             placeholder="blur"
             blurDataURL="https://placehold.co/700x192"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+          <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/30 to-transparent" />
           <div className="absolute bottom-6 left-6 md:left-8 right-6 md:right-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
             <div className="text-white">
               <div className="flex gap-2 mb-3">
