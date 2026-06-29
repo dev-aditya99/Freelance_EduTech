@@ -91,7 +91,7 @@ export function ConfirmDialog({
 
   // Intercept the onClick of the child element
   const trigger = isValidElement(children)
-    ? cloneElement(children as React.ReactElement, {
+    ? cloneElement(children as React.ReactElement<any>, {
         onClick: (e: any) => {
           handleOpen(e);
           // Agar bache ke paas pehle se onClick tha, toh usko bhi preserve karna zaroori nahi hai kyunki confirm hone pe chalega.

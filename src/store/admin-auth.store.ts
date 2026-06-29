@@ -22,12 +22,19 @@ interface State {
   login: (email: string, password: string) => Promise<any>;
   logout: () => Promise<void>;
   fetchAdmin: () => Promise<void>;
+  setAdmin: (admin: Admin | null, token?: string) => void;
 }
 
 export const useAdminAuthStore = create<State>((set) => ({
   admin: null,
   isAuthenticated: false,
   loading: false,
+
+  setAdmin: (admin, token) => {
+    if (token) localStorage.setItem("admin_access_token", token);
+    if (admin) localStorage.setItem("admin_data", JSON.stringify(admin));
+    set({ admin, isAuthenticated: !!admin });
+  },
 
   login: async (email, password) => {
     set({ loading: true });

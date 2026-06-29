@@ -104,7 +104,8 @@ export function CourseForm({
     const { name, value, type } = e.target as any;
     setFormData((prev) => ({
       ...prev,
-      [name]: type === "checkbox" ? e.target.checked : value,
+      [name]:
+        type === "checkbox" ? (e.target as HTMLInputElement).checked : value,
     }));
   };
 
@@ -284,7 +285,7 @@ export function CourseForm({
       router.replace("/admin/courses");
     } catch (error) {
       console.log(error);
-      toast.error(error?.response?.data?.message);
+      toast.error("Unable to update the course!");
     } finally {
       setLoading(false);
     }
@@ -302,7 +303,7 @@ export function CourseForm({
         setFormData(data);
       }
     } catch (error) {
-      toast.error(error.response.data.message);
+      toast.error("Something went wrong!");
     } finally {
       setPublishLoading(false);
     }

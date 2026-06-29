@@ -12,7 +12,13 @@ import {
 } from "lucide-react";
 
 export type ProgressVariant = "bar" | "circle";
-export type ProgressStatus = "uploading" | "success" | "error" | "paused";
+export type ProgressStatus =
+  | "idle"
+  | "uploading"
+  | "success"
+  | "error"
+  | "cancelled"
+  | "paused";
 
 export interface DynamicProgressProps {
   value: number;
