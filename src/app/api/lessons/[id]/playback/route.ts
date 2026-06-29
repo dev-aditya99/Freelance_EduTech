@@ -79,7 +79,7 @@ export async function GET(
     }
 
     // HLS URL
-    const playbackUrl = cloudinary.url(lesson.videoPublicId!, {
+    const playbackUrl = cloudinary.url(lesson.videoStorageKey!, {
       resource_type: "video",
 
       format: "m3u8",

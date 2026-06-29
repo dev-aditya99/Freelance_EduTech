@@ -50,7 +50,7 @@ export interface ILessonResource {
 
   type?: ResourceType;
 
-  uploadedAt: Date;
+  uploadedAt?: Date;
 }
 
 export interface ILesson extends Document {
