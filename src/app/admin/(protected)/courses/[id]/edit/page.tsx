@@ -17,15 +17,16 @@ export default function EditCoursePage({
   const [currentCourse, setCurrentCourse] = useState<any>();
 
   const filterCurrentCourse = async () => {
-    let holdCourse = JSON.parse(localStorage.getItem("current_course"));
+    let holdCourse = localStorage.getItem("current_course");
 
-    if (!holdCourse) {
+    if (!holdCourse || holdCourse == null) {
       toast.error("Course not found to edit!");
       router.back();
 
       return;
     }
 
+    holdCourse = JSON.parse(holdCourse);
     setCurrentCourse(holdCourse);
   };
 
