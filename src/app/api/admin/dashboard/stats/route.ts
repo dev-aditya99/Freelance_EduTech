@@ -2,16 +2,11 @@ import connectDB from "@/lib/db";
 import { getCurrentAdmin } from "@/middlewares/admin.middleware";
 import { NextRequest, NextResponse } from "next/server";
 
-export async function GET(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export async function GET(req: NextRequest) {
   try {
     await connectDB();
 
     await getCurrentAdmin(req);
-
-    const { id } = await params;
 
     return NextResponse.json(
       {
