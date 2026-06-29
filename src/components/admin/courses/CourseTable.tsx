@@ -202,7 +202,7 @@ export function CourseTable() {
                 {/* Course Created By  */}
                 <td className="px-6 py-4 text-slate-600 dark:text-slate-300">
                   <p className="flex items-center justify-center">
-                    {course.createdBy.fullName}
+                    {course?.createdBy?.fullName || "-"}
                   </p>
                 </td>
 

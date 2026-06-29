@@ -4,6 +4,7 @@ import Category from "@/models/category.model";
 import Course, { CourseStatus } from "@/models/course.model";
 import { NextRequest, NextResponse } from "next/server";
 import "@/models/user.model";
+import { handleApiError } from "@/lib/handle-api-error";
 
 export async function POST(req: NextRequest) {
   try {
@@ -152,16 +153,7 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error(error);
 
-    return NextResponse.json(
-      {
-        success: false,
-        message:
-          error instanceof Error ? error.message : "Something went wrong",
-      },
-      {
-        status: 500,
-      },
-    );
+    return handleApiError(error);
   }
 }
 
