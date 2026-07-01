@@ -1,107 +1,126 @@
-import mongoose, {
-    Document,
-    Model,
-    Schema,
-} from "mongoose";
+import mongoose, { Document, Model, Schema } from "mongoose";
 
-export interface IInstructor
-    extends Document {
+export interface IInstructor extends Document {
+  fullName: string;
+  slug: string;
 
-    fullName: string;
-    slug: string;
+  email?: string;
+  phone?: string;
 
-    email?: string;
-    phone?: string;
+  profileImage?: string;
+  profileImagePublicId?: string;
 
-    profileImage?: string;
-    coverImage?: string;
+  coverImage?: string;
+  coverImagePublicId?: string;
 
-    designation?: string;
-    headline?: string;
+  designation?: string;
+  headline?: string;
 
-    bio?: string;
+  bio?: string;
 
-    experienceYears: number;
+  experienceYears: number;
 
-    totalStudents: number;
-    totalCourses: number;
+  totalStudents: number;
+  totalCourses: number;
 
-    linkedinUrl?: string;
-    youtubeUrl?: string;
-    websiteUrl?: string;
+  linkedinUrl?: string;
+  youtubeUrl?: string;
+  websiteUrl?: string;
 
-    isActive: boolean;
+  isActive: boolean;
 
-    createdAt: Date;
-    updatedAt: Date;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-const instructorSchema =
-    new Schema<IInstructor>(
-        {
-            fullName: {
-                type: String,
-                required: true,
-                trim: true,
-            },
+const instructorSchema = new Schema<IInstructor>(
+  {
+    fullName: {
+      type: String,
+      required: true,
+      trim: true,
+    },
 
-            slug: {
-                type: String,
-                required: true,
-                unique: true,
-                lowercase: true,
-                trim: true,
-            },
+    slug: {
+      type: String,
+      required: true,
+      unique: true,
+      lowercase: true,
+      trim: true,
+    },
 
-            email: String,
-            phone: String,
+    email: {
+      type: String,
+      trim: true,
+      unique: true,
+      lowercase: true,
+      maxlength: 600,
+    },
 
-            profileImage: String,
-            coverImage: String,
+    phone: {
+      type: String,
+      trim: true,
+    },
 
-            designation: String,
-            headline: String,
+    profileImage: {
+      type: String,
+      trim: true,
+    },
+    profileImagePublicId: {
+      type: String,
+      trim: true,
+    },
 
-            bio: String,
+    coverImage: {
+      type: String,
+      trim: true,
+    },
 
-            experienceYears: {
-                type: Number,
-                default: 0,
-            },
+    coverImagePublicId: {
+      type: String,
+      trim: true,
+    },
 
-            totalStudents: {
-                type: Number,
-                default: 0,
-            },
+    designation: String,
+    headline: String,
 
-            totalCourses: {
-                type: Number,
-                default: 0,
-            },
+    bio: String,
 
-            linkedinUrl: String,
-            youtubeUrl: String,
-            websiteUrl: String,
+    experienceYears: {
+      type: Number,
+      default: 0,
+    },
 
-            isActive: {
-                type: Boolean,
-                default: true,
-            },
-        },
-        {
-            timestamps: true,
-        }
-    );
+    totalStudents: {
+      type: Number,
+      default: 0,
+    },
+
+    totalCourses: {
+      type: Number,
+      default: 0,
+    },
+
+    linkedinUrl: String,
+    youtubeUrl: String,
+    websiteUrl: String,
+
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+  },
+  {
+    timestamps: true,
+  },
+);
 
 instructorSchema.index({
-    slug: 1,
+  slug: 1,
 });
 
 const Instructor: Model<IInstructor> =
-    mongoose.models.Instructor ||
-    mongoose.model<IInstructor>(
-        "Instructor",
-        instructorSchema
-    );
+  mongoose.models.Instructor ||
+  mongoose.model<IInstructor>("Instructor", instructorSchema);
 
 export default Instructor;

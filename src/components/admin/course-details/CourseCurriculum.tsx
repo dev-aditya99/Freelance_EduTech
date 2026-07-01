@@ -153,7 +153,6 @@ export function CourseCurriculum({ course }: { course: any }) {
     newLessonsOrder: any[],
     lessonId: string,
   ) => {
-    console.log(newLessonsOrder);
     setLessons(newLessonsOrder);
 
     await execute(
@@ -250,7 +249,6 @@ export function CourseCurriculum({ course }: { course: any }) {
 
   // Redirect to Edit Lesson
   const handleLessonEdit = (lesson: any, sectionId: string) => {
-    console.log("lesson id: ", lesson);
     setSectionId(sectionId);
     setSelectedLesson({ ...lesson, sectionId });
     setIsLessonDrawerOpen(true);

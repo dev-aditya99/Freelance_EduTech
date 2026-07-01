@@ -15,16 +15,13 @@ export enum ICourseView {
 
 export default function CoursesPage() {
   const { fetchCourses, searchQuery, statusFilter } = useCourseStore();
-  const storedView = localStorage.getItem("course_view");
 
   const [view, setView] = useState<ICourseView | null>(
-    storedView ? (JSON.parse(storedView) as ICourseView) : null,
+    localStorage.getItem("course_view") as ICourseView,
   );
 
   useEffect(() => {
     const holdView = localStorage.getItem("course_view") || ICourseView.TABLE;
-
-    console.log(holdView);
     setView(holdView as ICourseView);
   }, []);
 

@@ -18,6 +18,15 @@ export const deleteVideo = async (lessonId: string) => {
   return data;
 };
 
+// getAllVideos
+export const getAllVideos = async (params: string = "") => {
+  const queryString = params ? `?${params}` : "";
+  const { data } = await adminApi.get(
+    `/admin/lessons/all_videos${queryString}`,
+  );
+  return data;
+};
+
 // Thumbnails
 // Update Thumbnail URL and PublicID
 export const updateThumbnailURL_ID = async (lessonId: string, payload: any) => {

@@ -57,9 +57,6 @@ export async function PATCH(
       section.sortOrder = sortOrder;
     }
 
-    console.log("section : ", section._id);
-    console.log("Sorting : ", sortOrder);
-
     await section.save();
 
     return NextResponse.json(

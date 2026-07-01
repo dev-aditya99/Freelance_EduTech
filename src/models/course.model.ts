@@ -4,6 +4,7 @@ export enum CourseStatus {
   DRAFT = "DRAFT",
   PUBLISHED = "PUBLISHED",
   ARCHIVED = "ARCHIVED",
+  DELETED = "DELETED",
 }
 
 export enum CourseLevel {
@@ -26,6 +27,7 @@ export interface ICourse extends Document {
   description: string;
 
   thumbnail?: string;
+  thumbnailPublicId?: string;
 
   category: mongoose.Types.ObjectId;
 
@@ -100,6 +102,11 @@ const courseSchema = new Schema<ICourse>(
       trim: true,
     },
 
+    thumbnailPublicId: {
+      type: String,
+      trim: true,
+    },
+
     category: {
       type: Schema.Types.ObjectId,
       ref: "Category",
@@ -161,21 +168,25 @@ const courseSchema = new Schema<ICourse>(
     totalSections: {
       type: Number,
       default: 0,
+      min: 0,
     },
 
     totalLessons: {
       type: Number,
       default: 0,
+      min: 0,
     },
 
     totalDuration: {
       type: Number,
       default: 0,
+      min: 0,
     },
 
     enrollmentCount: {
       type: Number,
       default: 0,
+      min: 0,
     },
 
     averageRating: {
@@ -188,6 +199,7 @@ const courseSchema = new Schema<ICourse>(
     totalRatings: {
       type: Number,
       default: 0,
+      min: 0,
     },
 
     seoTitle: {

@@ -36,7 +36,19 @@ export const publishCourse = async (id: string) => {
   return data;
 };
 
-export const deleteCourse = async (id: string) => {
-  const { data } = await adminApi.delete(`/admin/courses/${id}`);
+export const deleteCourse = async (id: string, action: CourseStatus) => {
+  const { data } = await adminApi.delete(
+    `/admin/courses/${id}?action=${action}`,
+  );
+  return data;
+};
+
+export const deleteCourseThumbnail = async (
+  id: string,
+  thumbnailPublicId: string,
+) => {
+  const { data } = await adminApi.delete(
+    `/admin/courses/${id}/thumbnail?thumbnailPublicId=${thumbnailPublicId}`,
+  );
   return data;
 };

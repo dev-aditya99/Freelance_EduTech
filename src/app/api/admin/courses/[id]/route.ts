@@ -1,8 +1,14 @@
+import { deleteCloudinaryImage } from "@/helpers/delete-cloudinary-image";
 import connectDB from "@/lib/db";
 import { handleApiError } from "@/lib/handle-api-error";
+import r2 from "@/lib/r2";
 import { getCurrentAdmin } from "@/middlewares/admin.middleware";
 import Category from "@/models/category.model";
 import Course, { CourseStatus } from "@/models/course.model";
+import Instructor from "@/models/instructor.model";
+import Lesson, { LessonStatus, VideoStatus } from "@/models/lesson.model";
+import Section from "@/models/section.model";
+import { DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(
@@ -29,11 +35,12 @@ export async function GET(
 
     const course = await Course.find({ _id: id })
       .populate("category", "name slug")
+      .populate("instructor", "fullName slug profileImage")
       .populate("createdBy", "fullName username email")
       .lean();
 
     if (!course) {
-      NextResponse.json(
+      return NextResponse.json(
         {
           success: false,
           message: "Course not found!",
@@ -59,6 +66,7 @@ export async function GET(
   }
 }
 
+// Update Course
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -131,8 +139,9 @@ export async function PATCH(
       course.description = body.description.trim();
     }
 
-    if (body.thumbnail !== undefined) {
+    if (body.thumbnail !== undefined && body.thumbnailPublicId !== undefined) {
       course.thumbnail = body.thumbnail;
+      course.thumbnailPublicId = body.thumbnailPublicId;
     }
 
     if (body.whatYouWillLearn !== undefined) {
@@ -173,10 +182,10 @@ export async function PATCH(
           );
         }
 
-        if (
-          body.discountPrice !== undefined &&
-          body.discountPrice > body.price
-        ) {
+        const price = Number(body.price);
+        const discountPrice = Number(body.discountPrice);
+
+        if (body.discountPrice !== undefined && discountPrice > price) {
           return NextResponse.json(
             {
               success: false,
@@ -191,6 +200,21 @@ export async function PATCH(
         course.price = body.price;
         course.discountPrice = body.discountPrice;
       }
+    }
+
+    if (body.instructor) {
+      const foundInstructor = await Instructor.findById(body.instructor);
+
+      if (!foundInstructor) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "Invalid Instructor!",
+          },
+          { status: 400 },
+        );
+      }
+      course.instructor = body.instructor;
     }
 
     // Course Level
@@ -243,6 +267,7 @@ export async function PATCH(
   }
 }
 
+// Delete or Archive Course
 export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -252,6 +277,23 @@ export async function DELETE(
     await getCurrentAdmin(req);
 
     const { id } = await params;
+
+    // queries
+    const { searchParams } = new URL(req.url);
+    const action = searchParams.get("action");
+
+    if (!action) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "No action found",
+        },
+        {
+          status: 404,
+        },
+      );
+    }
+
     const course = await Course.findById(id);
 
     if (!course) {
@@ -266,21 +308,197 @@ export async function DELETE(
       );
     }
 
-    course.status = CourseStatus.ARCHIVED;
-    course.isPublished = false;
+    // Check for the Sections and Lessons of the course
+    const sections = await Section.find({ course: course._id });
+    const lessons = await Lesson.find({ course: course._id });
 
-    await course.save();
+    // Check Action conditions
+    if (action == CourseStatus.DRAFT) {
+      course.status = CourseStatus.DRAFT;
+      course.isPublished = false;
 
-    return NextResponse.json(
-      {
-        success: true,
-        message: "Course archived successfully",
-      },
-      {
-        status: 200,
-      },
-    );
+      await course.save();
+
+      return NextResponse.json(
+        {
+          success: true,
+          message: "Invalid action!",
+          course,
+        },
+        {
+          status: 400,
+        },
+      );
+    } else if (action == CourseStatus.ARCHIVED) {
+      // If Enrollment count is greater then 0
+
+      await Promise.all(
+        lessons.map(async (lesson) => {
+          // Find the section
+          const section = sections.find(
+            (sec) => sec._id.toString() === lesson.section.toString(),
+          );
+
+          // if section not
+          if (!section) {
+            return NextResponse.json(
+              {
+                success: false,
+                message: `Course archive failed due to Unable to find section for the lesson: "${lesson.title}"`,
+              },
+              {
+                status: 404,
+              },
+            );
+          }
+
+          // delete thumbail
+          if (lesson.thumbnailUrl && lesson.thumbnailPublicId) {
+            const isDeleted = await deleteCloudinaryImage(
+              lesson.thumbnailPublicId,
+            );
+
+            if (!isDeleted) {
+              return NextResponse.json(
+                {
+                  success: false,
+                  message: `Course archive failed due to Unable to delete Thumbnail for the lesson: ${lesson.title} of Section: ${section.title}`,
+                },
+                {
+                  status: 400,
+                },
+              );
+            }
+
+            lesson.thumbnailPublicId = undefined;
+            lesson.thumbnailUrl = undefined;
+          }
+
+          // if video exist in the lesson
+          if (lesson.videoStorageKey) {
+            try {
+              await r2.send(
+                new DeleteObjectCommand({
+                  Bucket: process.env.R2_BUCKET_NAME!,
+                  Key: lesson.videoStorageKey,
+                }),
+              );
+
+              lesson.videoMimeType = undefined;
+              lesson.videoOriginalName = undefined;
+              lesson.videoSize = undefined;
+              lesson.videoStatus = VideoStatus.NOT_UPLOADED;
+              lesson.videoStorageKey = undefined;
+
+              section.totalDuration = section.totalDuration - lesson.duration;
+              await section.save();
+              course.totalDuration = course.totalDuration - lesson.duration;
+              await course.save();
+            } catch (error) {
+              return NextResponse.json(
+                {
+                  success: false,
+                  message: `Unable to delete course because video delete failed for the ${lesson.title} of Section: ${section.title}`,
+                },
+                {
+                  status: 500,
+                },
+              );
+            }
+          }
+
+          // if resources
+          if (lesson.resources.length > 0) {
+            for (const res of lesson.resources) {
+              try {
+                await r2.send(
+                  new DeleteObjectCommand({
+                    Bucket: process.env.R2_BUCKET_NAME!,
+                    Key: res.storageKey,
+                  }),
+                );
+
+                await Lesson.findByIdAndUpdate(lesson._id, {
+                  $pull: { resources: { _id: res._id } },
+                });
+              } catch (error) {
+                return NextResponse.json(
+                  {
+                    success: false,
+                    message: `Resource delete failed for ${res.title} in lesson: ${lesson.title}`,
+                  },
+                  { status: 500 },
+                );
+              }
+            }
+
+            lesson.resources = [];
+          }
+
+          lesson.status = LessonStatus.DRAFT;
+          await lesson.save();
+        }),
+      );
+
+      // if no enrollment
+      if (course.enrollmentCount <= 0) {
+        const isDeleted = await deleteCloudinaryImage(course.thumbnailPublicId);
+
+        if (!isDeleted) {
+          return NextResponse.json(
+            {
+              success: false,
+              message: `Unable to delete Course because Thumbnail delete failed for the lesson.`,
+            },
+            {
+              status: 400,
+            },
+          );
+        }
+
+        // Course Deleted
+        await Lesson.deleteMany({ course: course._id });
+        await Section.deleteMany({ course: course._id });
+        await Course.deleteOne({ _id: course._id });
+
+        return NextResponse.json(
+          {
+            success: true,
+            message: "Course deleted successfully",
+          },
+          {
+            status: 200,
+          },
+        );
+      } else {
+        // Course Archived
+        course.status = CourseStatus.ARCHIVED;
+        course.isPublished = false;
+
+        await course.save();
+
+        return NextResponse.json(
+          {
+            success: true,
+            message: "Course archived successfully",
+          },
+          {
+            status: 200,
+          },
+        );
+      }
+    } else {
+      return NextResponse.json(
+        {
+          success: true,
+          message: "Invalid action!",
+        },
+        {
+          status: 400,
+        },
+      );
+    }
   } catch (error) {
-    handleApiError(error);
+    return handleApiError(error);
   }
 }

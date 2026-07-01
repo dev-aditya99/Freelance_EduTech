@@ -13,10 +13,12 @@ import {
   saveResource,
   deleteResource,
   deleteLesson,
+  downloadResource,
 } from "@/services/section.service";
 import {
   deleteThumbnail,
   deleteVideo,
+  getAllVideos,
   getVideoUploadURL,
   updateVideoLesson,
 } from "@/services/video.service";
@@ -54,11 +56,13 @@ interface SectionState {
   getResourceURL: (sectionId: string, payload: any) => Promise<void>;
   saveResource: (sectionId: string, payload: any) => Promise<void>;
   deleteResource: (sectionId: string, resourceId: string) => Promise<void>;
+  downloadResource: (lessonId: string, resourceId: string) => Promise<void>;
 
   // Video
   getVideoUploadURL: (payload: any) => Promise<void>;
   updateVideoLesson: (lessonId: string, payload: any) => Promise<void>;
   deleteVideo: (lessonId: string) => Promise<void>;
+  getAllVideos: (params: string) => Promise<void>;
 
   // Thumbnail
   updateThumbnailURL_ID: (lessonId: string, payload: any) => Promise<void>;
@@ -150,6 +154,7 @@ export const useSectionStore = create<SectionState>((set, get) => ({
     await deleteLesson(lessonId);
   },
 
+  // Resources
   getResourceURL: async (payload) => {
     await getResourceURL(payload);
   },
@@ -164,6 +169,11 @@ export const useSectionStore = create<SectionState>((set, get) => ({
     await deleteResource(lessonId, resourceId);
   },
 
+  downloadResource: async (lessonId, resourceId) => {
+    await downloadResource(lessonId, resourceId);
+  },
+
+  // Videos
   getVideoUploadURL: async (payload) => {
     await getVideoUploadURL(payload);
   },
@@ -176,6 +186,11 @@ export const useSectionStore = create<SectionState>((set, get) => ({
     await deleteVideo(lessonId);
   },
 
+  getAllVideos: async (params) => {
+    await getAllVideos(params);
+  },
+
+  // Thumbnails
   updateThumbnailURL_ID: async (lessonId, payload) => {
     await deleteThumbnail(lessonId, payload);
   },

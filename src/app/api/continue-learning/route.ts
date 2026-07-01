@@ -16,8 +16,6 @@ export async function GET(req: NextRequest) {
 
     const user = await getCurrentUser(req);
 
-    console.log(mongoose.modelNames());
-
     const latestProgress = await Progress.findOne({
       user: user._id,
     })

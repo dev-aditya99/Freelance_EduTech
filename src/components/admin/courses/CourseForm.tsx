@@ -12,7 +12,6 @@ import {
   Plus,
   AlertCircle,
   Image as ImageIcon,
-  Expand,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
@@ -22,14 +21,15 @@ import {
 } from "@/types/course.types";
 import {
   createCourse,
+  deleteCourseThumbnail,
   publishCourse,
   updateCourse,
 } from "@/services/course.service";
-import { Button } from "@/components/ui/button";
 import { DynamicButton } from "@/components/ui/DynamicButton";
 import { uploadImage } from "@/services/upload.service";
 import { DynamicSearchSelect } from "@/components/ui/DynamicSearchSelect";
 import { getCategories } from "@/services/category.service";
+import { getAllInstructors } from "@/services/instructors.service"; //  Added Instructor Service
 import toast from "react-hot-toast";
 import Image from "next/image";
 
@@ -55,14 +55,16 @@ export function CourseForm({
   const [loading, setLoading] = useState(false);
   const [publishLoading, setPublishLoading] = useState(false);
 
-  // FORM STATES (Mapped to your schema)
+  // FORM STATES
   const [formData, setFormData] = useState({
     _id: initialData?._id || "",
     title: initialData?.title || "",
     shortDescription: initialData?.shortDescription || "",
     description: initialData?.description || "",
     thumbnail: initialData?.thumbnail || "",
-    category: initialData?.category || "",
+    thumbnailPublicId: initialData?.thumbnailPublicId || "",
+    category: initialData?.category?._id || initialData?.category || "",
+    instructor: initialData?.instructor?._id || initialData?.instructor || "", //  Instructor State Setup
     isFree: initialData?.isFree || false,
     price: initialData?.price || "",
     discountPrice: initialData?.discountPrice || "",
@@ -109,7 +111,6 @@ export function CourseForm({
     }));
   };
 
-  // Helper for Dynamic Arrays
   const DynamicListInput = ({ title, items, setItems, placeholder }: any) => {
     const [input, setInput] = useState("");
     const handleAdd = () => {
@@ -168,8 +169,8 @@ export function CourseForm({
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 2 * 1024 * 1024) {
-      setImageError("Image must be less than 2MB.");
+    if (file.size > 6 * 1024 * 1024) {
+      setImageError("Image must be less than 6MB.");
       return;
     }
     setImageError("");
@@ -177,6 +178,7 @@ export function CourseForm({
     setImagePreview(URL.createObjectURL(file));
   };
 
+  //  THIS WAS MISSING. RESTORED EXACTLY AS YOU HAD IT.
   const handleSteps = (nextStep: number) => {
     if (currentStep == 1) {
       if (
@@ -217,6 +219,7 @@ export function CourseForm({
     }
   };
 
+  // Handle Course Save
   const handleSave = async () => {
     try {
       if (
@@ -237,60 +240,89 @@ export function CourseForm({
       }
 
       setLoading(true);
-      let thumbnail = formData?.thumbnail || "";
 
-      if (imageFile) {
-        const uploaded = await uploadImage(imageFile, "course_thumbnails");
-        thumbnail = uploaded.imageUrl;
-      }
+      const payload = {
+        ...formData,
+        instructor: formData.instructor || null,
+      };
+
       let data: any;
       if (isEditing) {
-        data = await updateCourse(formData._id, { ...formData, thumbnail });
+        data = await updateCourse(formData._id, payload);
       } else {
-        data = await createCourse({ ...formData, thumbnail });
+        data = await createCourse(payload);
       }
-      setFormData(data.course);
+
+      setFormData((prev) => ({ ...prev, _id: data.course?._id || prev._id }));
       setCurrentStep(4);
-      // router.replace("/admin/courses");
-    } catch (error) {
+    } catch (error: any) {
       console.log(error);
+      const backendMessage =
+        error?.response?.data?.message ||
+        error.message ||
+        "Unable to Create the course!";
+      toast.error(backendMessage);
     } finally {
       setLoading(false);
     }
   };
 
+  // Update Course
   const handleUpdate = async () => {
     try {
       setLoading(true);
       let thumbnail = undefined;
+      let thumbnailPublicId = undefined;
 
       if (imageFile) {
+        if (formData?.thumbnailPublicId) {
+          const isDeleted = await deleteCourseThumbnail(
+            formData?._id,
+            formData?.thumbnailPublicId,
+          );
+
+          if (!isDeleted?.success) {
+            toast.error(
+              "Unable to save the course, because failed to delete old image!",
+            );
+            return;
+          }
+        }
+
         const uploaded = await uploadImage(imageFile, "course_thumbnails");
         thumbnail = uploaded.imageUrl;
+        thumbnailPublicId = uploaded.publicId;
       }
 
       let formNewData = {
         ...formData,
         thumbnail,
+        thumbnailPublicId,
+        instructor: formData.instructor || null,
         whatYouWillLearn,
         requirements,
         targetAudience,
         seoKeywords,
       };
-      console.log(formData);
+
       let data: any;
       data = await updateCourse(formData._id, { ...formNewData });
       setFormData(data);
-      toast.success(data?.message || "Ho gaya");
+      toast.success(data?.message || "Course Updated!");
       router.replace("/admin/courses");
-    } catch (error) {
+    } catch (error: any) {
       console.log(error);
-      toast.error("Unable to update the course!");
+      const backendMessage =
+        error?.response?.data?.message ||
+        error.message ||
+        "Unable to update the course!";
+      toast.error(backendMessage);
     } finally {
       setLoading(false);
     }
   };
 
+  // Publish the course
   const handlePublish = async () => {
     try {
       setPublishLoading(true);
@@ -301,9 +333,14 @@ export function CourseForm({
 
       if (data) {
         setFormData(data);
+        router.replace("/admin/courses");
       }
-    } catch (error) {
-      toast.error("Something went wrong!");
+    } catch (error: any) {
+      const backendMessage =
+        error?.response?.data?.message ||
+        error.message ||
+        "Something went wrong!";
+      toast.error(backendMessage);
     } finally {
       setPublishLoading(false);
     }
@@ -316,7 +353,7 @@ export function CourseForm({
         return (
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Course Title  */}
+              {/* Course Title */}
               <div>
                 <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 block mb-1.5">
                   Course Title *
@@ -331,19 +368,17 @@ export function CourseForm({
                 />
               </div>
 
-              {/* Category Search  */}
-              <div>
+              {/* Category Search */}
+              <div className="z-[60]">
                 <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 block mb-1.5">
                   Category *
                 </label>
-
                 <DynamicSearchSelect
                   value={formData.category}
-                  onChange={(val) => {
-                    setFormData((prev) => ({ ...prev, category: val }));
-                  }}
-                  // initialItem={formData.category}
-                  defaultItem={formData.category || null}
+                  onChange={(val) =>
+                    setFormData((prev) => ({ ...prev, category: val }))
+                  }
+                  defaultItem={initialData?.category || null}
                   fetchFn={async (query) => {
                     try {
                       const res = await getCategories({
@@ -358,34 +393,81 @@ export function CourseForm({
                   placeholder="Search and select category..."
                 />
               </div>
+
+              {/*  Instructor Search */}
+              <div className="z-50">
+                <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center justify-between mb-1.5">
+                  <span>Instructor (Optional)</span>
+                  {formData.instructor && (
+                    <button
+                      onClick={() =>
+                        setFormData((prev) => ({ ...prev, instructor: "" }))
+                      }
+                      className="text-[10px] text-rose-500 hover:underline uppercase"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </label>
+                <DynamicSearchSelect
+                  value={formData.instructor}
+                  onChange={(val) =>
+                    setFormData((prev) => ({ ...prev, instructor: val }))
+                  }
+                  defaultItem={
+                    initialData?.instructor?.fullName
+                      ? {
+                          _id: initialData.instructor._id,
+                          name: initialData.instructor.fullName,
+                          slug: initialData.instructor.slug,
+                          profileImage: initialData.instructor.profileImage,
+                        }
+                      : null
+                  }
+                  fetchFn={async (query) => {
+                    try {
+                      const res = await getAllInstructors(query);
+                      return (
+                        res?.instructors?.map((i: any) => ({
+                          ...i,
+                          name: i.fullName,
+                        })) || []
+                      );
+                    } catch (error) {
+                      return [];
+                    }
+                  }}
+                  placeholder="Search and assign instructor..."
+                />
+              </div>
             </div>
 
-            {/* Short Description  */}
+            {/* Short Description */}
             <div>
               <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 block mb-1.5">
-                Short Description (Max 500 chars) *
+                Short Description (Max 100 chars) *
               </label>
               <textarea
                 name="shortDescription"
-                value={formData.shortDescription}
+                value={formData?.shortDescription}
                 onChange={handleInputChange}
                 maxLength={100}
                 rows={2}
                 className="w-full px-4 py-3 bg-slate-50 dark:bg-[#0A0A0A] border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 dark:text-white transition-all resize-none"
               />
               <p className="text-xs text-slate-500 text-right mt-1">
-                {formData.shortDescription.length}/100
+                {formData?.shortDescription?.length}/100
               </p>
             </div>
 
-            {/* Long Description  */}
+            {/* Long Description */}
             <div>
               <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 block mb-1.5">
                 Full Description *
               </label>
               <textarea
                 name="description"
-                value={formData.description}
+                value={formData?.description}
                 onChange={handleInputChange}
                 rows={6}
                 className="w-full px-4 py-3 bg-slate-50 dark:bg-[#0A0A0A] border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 dark:text-white transition-all resize-none"
@@ -453,7 +535,7 @@ export function CourseForm({
               <input
                 type="checkbox"
                 name="isFree"
-                value={formData.isFree}
+                value={formData.isFree as any}
                 checked={formData.isFree}
                 onChange={handleInputChange}
                 className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500/20"
@@ -596,7 +678,7 @@ export function CourseForm({
               <input
                 type="checkbox"
                 name="isFeatured"
-                checked={formData.isFeatured}
+                checked={formData?.isFeatured || false}
                 onChange={handleInputChange}
                 className="w-5 h-5 rounded border-amber-300 text-amber-600 focus:ring-amber-500/20"
               />
@@ -634,15 +716,14 @@ export function CourseForm({
         </div>
         <div className="flex items-center gap-3 w-full sm:w-auto">
           {!isEditing && formData.status == "DRAFT" ? (
-            <p className="flex-1 sm:flex-none px-5 py-2.5 bg-white dark:bg-[#111] border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 rounded-xl font-medium text-sm shadow-sm hover:bg-slate-50 dark:hover:bg-[#1A1A1A]">
+            <p className="flex-1 sm:flex-none px-5 py-2.5 bg-gray-200 dark:bg-[#111] border border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-00 rounded-xl font-medium text-sm hover:bg-slate-50 dark:hover:bg-[#1A1A1A]">
               Saved to Draft
             </p>
           ) : (
             <DynamicButton
-              onClick={handleSave}
+              onClick={handleUpdate}
               isLoading={loading}
               disabled={loading}
-              className="flex-1 sm:flex-none px-5 py-2.5 bg-white dark:bg-[#111] border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 rounded-xl font-medium text-sm shadow-sm hover:bg-slate-50 dark:hover:bg-[#1A1A1A]"
             >
               Save Changes
             </DynamicButton>
@@ -664,7 +745,7 @@ export function CourseForm({
             <div
               key={step.id}
               className="flex items-center flex-1 last:flex-none relative cursor-pointer shrink-0 text-nowrap"
-              onClick={() => setCurrentStep(step.id)}
+              onClick={() => handleSteps(step.id)}
             >
               <div className="flex items-center gap-3 z-10 relative bg-white dark:bg-[#111] pr-4">
                 <div
@@ -739,9 +820,7 @@ export function CourseForm({
             </DynamicButton>
           ) : (
             <button
-              onClick={() =>
-                setCurrentStep((p) => Math.min(p + 1, STEPS.length))
-              }
+              onClick={() => handleSteps(0)} //  Fixed missing handleSteps
               className="flex items-center gap-2 px-6 py-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-xl font-medium text-sm shadow-sm"
             >
               Next Step <ArrowRight size={16} />

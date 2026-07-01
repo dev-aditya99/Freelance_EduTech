@@ -26,6 +26,7 @@ export interface Course {
   shortDescription: string;
   description: string;
   thumbnail?: string;
+  thumbnailPublicId?: string;
   category: ICategory; // ObjectId string
   whatYouWillLearn: string[];
   requirements: string[];

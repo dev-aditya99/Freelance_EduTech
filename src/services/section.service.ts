@@ -40,7 +40,6 @@ export const deleteSection = async (sectionId: string) => {
 };
 
 // Lessons
-
 export const getLessons = async (sectionId: string) => {
   const { data } = await adminApi.get(`/admin/sections/${sectionId}/lessons`);
   return data;
@@ -82,6 +81,15 @@ export const deleteResource = async (lessonId: string, resourceId: string) => {
   const { data } = await adminApi.delete(
     `/admin/lessons/${lessonId}/resources?resourceId=${resourceId}`,
   );
-  console.log("resourceId: ", resourceId);
+  return data;
+};
+
+export const downloadResource = async (
+  lessonId: string,
+  resourceId: string,
+) => {
+  const { data } = await adminApi.get(
+    `/admin/resources/download?lessonId=${lessonId}&resourceId=${resourceId}`,
+  );
   return data;
 };

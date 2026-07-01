@@ -12,6 +12,12 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { DynamicDate } from "@/components/ui/DynamicDate";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { useUploader } from "@/hooks/useResourceUpload";
+import { useAsyncHandler } from "@/hooks/useAsyncHandler";
+import { deleteCategory } from "@/services/category.service";
+import { DynamicButton } from "@/components/ui/DynamicButton";
+import toast from "react-hot-toast";
 
 interface TableProps {
   categories: any[];
@@ -20,7 +26,6 @@ interface TableProps {
   currentPage: number;
   setCurrentPage: (val: number | ((prev: number) => number)) => void;
   onEdit: (cat: any) => void;
-  onDelete: (cat: any) => void;
   onToggleStatus: (id: string, status: string) => void;
 }
 
@@ -31,10 +36,35 @@ export function CategoryTable({
   currentPage,
   setCurrentPage,
   onEdit,
-  onDelete,
   onToggleStatus,
 }: TableProps) {
+  // Custom Hooks
+  const { execute, isLoading: loader } = useAsyncHandler();
+  const { uploadFile, cancelUpload, getProgress, getStatus, clearUploadState } =
+    useUploader();
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+
+  const handleDelete = async (category: any) => {
+    await execute(
+      async () => {
+        await deleteCategory(category._id);
+      },
+      {
+        loadingKey: "delete_category",
+        showToast: true,
+        successMsg: "Category Deleted successfully!",
+        errorMsg: (err: any) =>
+          err.response.data.message || "Failed to delete Category",
+        onSuccess(data) {
+          toast.success("Category Deleted successfully!");
+          window.location.reload();
+        },
+        onError: (error) => {
+          console.log(error);
+        },
+      },
+    );
+  };
 
   if (isLoading) {
     return (
@@ -254,15 +284,27 @@ export function CategoryTable({
                           )}
                         </button>
                         <div className="h-px bg-slate-100 dark:bg-slate-800 my-1 sm:my-1.5"></div>
-                        <button
-                          onClick={() => {
+
+                        <ConfirmDialog
+                          title={`Delete ${cat?.name}`}
+                          description="Are you sure? You want to delete this category?"
+                          confirmText="I'm Sure"
+                          onConfirm={() => {
                             setActiveDropdown(null);
-                            onDelete(cat);
+                            handleDelete(cat);
                           }}
-                          className="w-full flex items-center gap-2.5 px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 font-medium"
+                          cancelText="No"
+                          variant="danger"
                         >
-                          <Trash2 size={16} className="shrink-0" /> Delete
-                        </button>
+                          <DynamicButton
+                            isLoading={loader("delete_category")}
+                            variant="danger"
+                            leftIcon={<Trash2 size={16} className="shrink-0" />}
+                            title="Delete"
+                            name="Delete"
+                            className="w-full flex items-center gap-2.5 px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 font-medium"
+                          />
+                        </ConfirmDialog>
                       </motion.div>
                     )}
                   </AnimatePresence>

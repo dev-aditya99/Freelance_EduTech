@@ -4,6 +4,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Search, Loader2, X, Image as ImageIcon } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import Image from "next/image";
 
 export interface DynamicSearchSelectProps {
   value: string;
@@ -26,10 +27,18 @@ export function DynamicSearchSelect({
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [results, setResults] = useState<any[]>([]);
+
   const [selectedItem, setSelectedItem] = useState<any>(
     defaultItem || initialItem,
   );
   const wrapperRef = useRef<HTMLDivElement>(null);
+
+  // 🟢 NEW FIX: Agar parent se naya defaultItem aaye (API response ke baad), toh usko update karo
+  useEffect(() => {
+    if (defaultItem || initialItem) {
+      setSelectedItem(defaultItem || initialItem);
+    }
+  }, [defaultItem, initialItem]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -65,11 +74,21 @@ export function DynamicSearchSelect({
       <div className="flex items-center justify-between w-full px-4 py-2.5 bg-slate-50 dark:bg-[#0A0A0A] border border-slate-200 dark:border-slate-800 rounded-xl transition-all">
         <div className="flex items-center gap-3 overflow-hidden">
           <div className="w-8 h-8 rounded-lg bg-slate-200 dark:bg-slate-800 flex shrink-0 items-center justify-center overflow-hidden border border-slate-200 dark:border-slate-700">
-            {selectedItem.thumbnail || selectedItem.image ? (
-              <img
-                src={selectedItem.thumbnail || selectedItem.image}
+            {selectedItem.thumbnail ||
+            selectedItem.image ||
+            selectedItem.profileImage ? (
+              <Image
+                src={
+                  selectedItem.thumbnail ||
+                  selectedItem.image ||
+                  selectedItem.profileImage
+                }
                 alt="thumb"
+                width={32}
+                height={32}
                 className="w-full h-full object-cover"
+                quality={10}
+                loading="lazy"
               />
             ) : (
               <ImageIcon size={14} className="text-slate-400" />
@@ -77,10 +96,10 @@ export function DynamicSearchSelect({
           </div>
           <div className="flex flex-col truncate">
             <span className="text-sm font-semibold text-slate-900 dark:text-white truncate">
-              {selectedItem.name || selectedItem.title}
+              {selectedItem.name || selectedItem.title || selectedItem.fullName}
             </span>
             <span className="text-[10px] text-slate-500 truncate">
-              /{selectedItem.slug}
+              /{selectedItem.slug || "no-slug"}
             </span>
           </div>
         </div>
@@ -151,9 +170,11 @@ export function DynamicSearchSelect({
                     className="flex items-center gap-3 p-2.5 hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-lg cursor-pointer transition-colors"
                   >
                     <div className="w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-800 flex shrink-0 items-center justify-center overflow-hidden border border-slate-200 dark:border-slate-700">
-                      {item.thumbnail || item.image ? (
+                      {item.thumbnail || item.image || item.profileImage ? (
                         <img
-                          src={item.thumbnail || item.image}
+                          src={
+                            item.thumbnail || item.image || item.profileImage
+                          }
                           alt="thumb"
                           className="w-full h-full object-cover"
                         />
@@ -163,7 +184,7 @@ export function DynamicSearchSelect({
                     </div>
                     <div className="flex flex-col overflow-hidden">
                       <span className="text-sm font-medium text-slate-900 dark:text-white truncate">
-                        {item.name || item.title}
+                        {item.name || item.title || item.fullName}
                       </span>
                       <span className="text-[11px] text-slate-500 truncate">
                         /{item.slug}

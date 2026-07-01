@@ -124,24 +124,31 @@ export async function DELETE(
       category: id,
     });
 
+    // If Course Count 0
+    if (coursesCount > 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: `This category is linked to ${coursesCount} courses and cannot be deleted until it is unassigned.`,
+        },
+        { status: 400 },
+      );
+    }
+
     // HARD DELETE
     if (coursesCount === 0) {
       await Category.findByIdAndDelete(id);
 
-      return NextResponse.json({
-        success: true,
-        message: "Category deleted permanently",
-      });
+      return NextResponse.json(
+        {
+          success: true,
+          message: "Category deleted permanently.",
+        },
+        {
+          status: 200,
+        },
+      );
     }
-
-    // SOFT DELETE
-    category.isActive = false;
-    await category.save();
-
-    return NextResponse.json({
-      success: true,
-      message: "Category has courses. Category deactivated instead.",
-    });
   } catch (error: any) {
     handleApiError(error);
   }

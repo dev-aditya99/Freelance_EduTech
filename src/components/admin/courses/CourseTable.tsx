@@ -18,10 +18,21 @@ import Image from "next/image";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { useRouter } from "next/navigation";
+import { useAsyncHandler } from "@/hooks/useAsyncHandler";
+import { useUploader } from "@/hooks/useResourceUpload";
+import { CourseStatus } from "@/types/course.types";
+import toast from "react-hot-toast";
+import { DynamicButton } from "@/components/ui/DynamicButton";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 
 export function CourseTable() {
   const router = useRouter();
   const { courses, deleteCourse } = useCourseStore();
+
+  // Custom hooks
+  const { execute, isLoading } = useAsyncHandler();
+  const { uploadFile, cancelUpload, getProgress, getStatus, clearUploadState } =
+    useUploader();
 
   const handleEditRedirect = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
@@ -40,6 +51,28 @@ export function CourseTable() {
     });
     localStorage.setItem("current_course", JSON.stringify(holdCourse));
     router.push(`/admin/courses/${id}`);
+  };
+
+  const deleteCourseHandler = async (id: string) => {
+    let action = CourseStatus.ARCHIVED;
+    await execute(
+      async () => {
+        await deleteCourse(id, action);
+      },
+      {
+        loadingKey: "delete_course",
+        showToast: true,
+        successMsg: "Thumbnail Deleted successfully!",
+        errorMsg: (err) =>
+          err.response.data.message || "Failed to delete video.",
+        onSuccess(data) {
+          window.location.reload();
+        },
+        onError: (error) => {
+          console.log(error);
+        },
+      },
+    );
   };
 
   return (
@@ -227,16 +260,29 @@ export function CourseTable() {
                     >
                       <Edit size={18} />
                     </button>
-                    <button
-                      onClick={async () => {
-                        if (confirm("Archive this course?")) {
-                          await deleteCourse(course._id);
-                        }
-                      }}
-                      className="p-2 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors"
+
+                    <ConfirmDialog
+                      title="Delete Course"
+                      description={
+                        course.enrollmentCount > 0
+                          ? `This course has "${course.enrollmentCount}" enrollments, so it can't be delete. Archive it and get it back at any time.`
+                          : `Are sure you want to delete this course? It has "${course.totalSections}" Sections, "${course.totalLessons}" Lessons, and "${course.totalRatings}" Ratings with Duration of ${course.totalDuration}mins, and this action will permanently delete the course with all the sections and lessons and their media content.`
+                      }
+                      onConfirm={() => deleteCourseHandler(course._id)}
+                      confirmText={
+                        course.enrollmentCount > 0 ? "Archive it" : "I'm sure"
+                      }
+                      cancelText="Cancel"
+                      className="text-wrap! text-left"
                     >
-                      <Trash2 size={18} />
-                    </button>
+                      <DynamicButton
+                        isLoading={isLoading("delete_course")}
+                        variant="ghost"
+                        className="p-2 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors"
+                        rightIcon={<Trash2 size={18} />}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    </ConfirmDialog>
                   </div>
                 </td>
               </motion.tr>

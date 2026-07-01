@@ -36,8 +36,7 @@ const MENU_ITEMS = [
     items: [
       { name: "Categories", icon: Tags, href: "/admin/categories" },
       { name: "Courses", icon: BookOpen, href: "/admin/courses" },
-      { name: "Sections", icon: ListTree, href: "/admin/sections" },
-      { name: "Lessons", icon: PlaySquare, href: "/admin/lessons" },
+      { name: "Videos", icon: ListTree, href: "/admin/videos" },
       { name: "Resources", icon: FileBox, href: "/admin/resources" },
     ],
   },

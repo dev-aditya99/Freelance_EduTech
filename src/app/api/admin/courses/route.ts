@@ -5,6 +5,8 @@ import Course, { CourseStatus } from "@/models/course.model";
 import { NextRequest, NextResponse } from "next/server";
 import "@/models/user.model";
 import { handleApiError } from "@/lib/handle-api-error";
+import Instructor from "@/models/instructor.model";
+import { deleteCloudinaryImage } from "@/helpers/delete-cloudinary-image";
 
 export async function POST(req: NextRequest) {
   try {
@@ -12,15 +14,25 @@ export async function POST(req: NextRequest) {
 
     const admin = await getCurrentAdmin(req);
 
+    if (!admin || admin == undefined) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Unauthorized",
+        },
+        { status: 401 },
+      );
+    }
+
     const {
       title,
       shortDescription,
       description,
-      thumbnail,
       category,
       isFree,
       price,
       discountPrice,
+      instructor,
     } = await req.json();
 
     // Validation
@@ -92,11 +104,28 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      if (discountPrice !== undefined && discountPrice > price) {
+      const priceNum = Number(price);
+      const discountPriceNum = Number(discountPrice);
+
+      if (discountPrice !== undefined && discountPriceNum > priceNum) {
         return NextResponse.json(
           {
             success: false,
             message: "Discount price cannot exceed price",
+          },
+          { status: 400 },
+        );
+      }
+    }
+
+    if (instructor) {
+      const foundInstructor = await Instructor.findById(instructor);
+
+      if (!foundInstructor) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "Invalid Instructor!",
           },
           { status: 400 },
         );
@@ -127,11 +156,12 @@ export async function POST(req: NextRequest) {
 
       shortDescription: shortDescription.trim(),
       description: description.trim(),
-      thumbnail,
       category,
       isFree,
       price: isFree ? 0 : price,
       discountPrice: isFree ? 0 : discountPrice,
+
+      instructor,
 
       status: CourseStatus.DRAFT,
       isPublished: false,
@@ -152,7 +182,6 @@ export async function POST(req: NextRequest) {
     );
   } catch (error) {
     console.error(error);
-
     return handleApiError(error);
   }
 }
@@ -220,6 +249,7 @@ export async function GET(req: NextRequest) {
     const [courses, total] = await Promise.all([
       Course.find(filter)
         .populate("category", "name slug image")
+        .populate("instructor", "fullName slug profileImage")
         .populate("createdBy", "fullName username email")
         .sort({
           [sortBy]: sortOrder,

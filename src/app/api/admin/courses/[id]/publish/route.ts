@@ -62,7 +62,6 @@ export async function POST(
       course: course._id,
       status: LessonStatus.PUBLISHED,
     });
-    console.log(publishedLessons);
 
     if (publishedLessons === 0) {
       return NextResponse.json(

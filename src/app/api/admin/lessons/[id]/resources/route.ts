@@ -37,9 +37,17 @@ export async function PATCH(
 
     const { id } = await params;
 
-    const { title, storageKey, type } = await req.json();
+    const {
+      title,
+      storageKey,
+      type,
+      originalName,
+      mimeType,
+      size,
+      uploadedAt,
+    } = await req.json();
 
-    if (!title || !storageKey || !type) {
+    if (!title || !storageKey || !type || !originalName || !mimeType || !size) {
       return NextResponse.json(
         {
           success: false,
@@ -69,6 +77,10 @@ export async function PATCH(
       title,
       storageKey,
       type: type as ResourceType,
+      originalName,
+      mimeType,
+      size,
+      uploadedAt,
     });
 
     await lesson.save();
@@ -102,7 +114,6 @@ export async function DELETE(
   try {
     await connectDB();
     const admin = await getCurrentAdmin(req);
-    console.log("Working");
 
     if (admin?.role !== AdminRole.ADMIN) {
       return NextResponse.json(

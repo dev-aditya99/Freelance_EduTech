@@ -91,8 +91,6 @@ export function LessonDrawer({
   const { uploadFile, cancelUpload, getProgress, getStatus, clearUploadState } =
     useUploader();
 
-  const { executeProcess } = useNetworkManager();
-
   // STATES
   const [formData, setFormData] = useState<IFormData>({
     title: lesson?.title || "",
@@ -131,15 +129,6 @@ export function LessonDrawer({
   const [isUploadingResource, setIsUploadingResource] = useState(false);
 
   if (!isOpen) return null;
-
-  // useEffect(() => {
-  //   console.log(formData);
-  //   console.log(
-  //     isUploadingThumb,
-  //     isLoading("upload_video"),
-  //     isLoading("upload_resource"),
-  //   );
-  // }, []);
 
   // DRAG & DROP HANDLERS
   const preventDefaults = (e: React.DragEvent) => {
@@ -442,6 +431,9 @@ export function LessonDrawer({
           title: newResourceTitle,
           storageKey: storageKey,
           type: newResourceFile.type.includes("pdf") ? "PDF" : "OTHER",
+          originalName: newResourceFile.name,
+          mimeType: newResourceFile.type,
+          size: newResourceFile.size,
         });
 
         setResources(newResource?.resources);

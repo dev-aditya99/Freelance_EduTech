@@ -54,12 +54,6 @@ export default function CategoriesPage() {
     await toggleCategoryStatus(id, newStatus);
   };
 
-  const handleDelete = async (category: any) => {
-    if (window.confirm(`Are you sure you want to delete "${category.name}"?`)) {
-      await deleteCategory(category._id);
-    }
-  };
-
   return (
     <div className="w-full max-w-7xl mx-auto space-y-6">
       {/* Header */}
@@ -101,7 +95,6 @@ export default function CategoriesPage() {
           currentPage={currentPage}
           setCurrentPage={setCurrentPage}
           onEdit={handleEdit}
-          onDelete={handleDelete}
           onToggleStatus={handleToggleStatus}
         />
       </div>

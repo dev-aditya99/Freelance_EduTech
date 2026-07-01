@@ -21,6 +21,7 @@ export interface ConfirmDialogProps {
   cancelText?: string;
   variant?: ConfirmVariant;
   children: React.ReactNode; // The trigger element (button, div, etc.)
+  className?: string;
 }
 
 export function ConfirmDialog({
@@ -31,6 +32,7 @@ export function ConfirmDialog({
   cancelText = "Cancel",
   variant = "danger",
   children,
+  className = "",
 }: ConfirmDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -72,12 +74,15 @@ export function ConfirmDialog({
     setIsOpen(true);
   };
 
-  const handleClose = () => {
+  const handleClose = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
     if (isLoading) return;
     setIsOpen(false);
   };
 
-  const handleConfirm = async () => {
+  const handleConfirm = async (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+
     setIsLoading(true);
     try {
       await onConfirm();
@@ -105,7 +110,9 @@ export function ConfirmDialog({
 
       <AnimatePresence>
         {isOpen && (
-          <div className="fixed inset-0 z-[999] flex items-center justify-center p-4">
+          <div
+            className={`fixed inset-0 z-[999999999999] flex items-center justify-center p-4 ${className}`}
+          >
             {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}

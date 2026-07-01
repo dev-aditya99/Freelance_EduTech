@@ -6,7 +6,9 @@ import {
   updateCourse,
   toggleCourseStatus,
   deleteCourse,
+  deleteCourseThumbnail,
 } from "@/services/course.service";
+import { CourseStatus } from "@/models/course.model";
 
 interface CourseState {
   courses: Course[];
@@ -26,7 +28,11 @@ interface CourseState {
   createCourse: (payload: any) => Promise<void>;
   updateCourse: (id: string, payload: any) => Promise<void>;
   toggleStatus: (id: string, currentStatus: string) => Promise<void>;
-  deleteCourse: (id: string) => Promise<void>;
+  deleteCourse: (id: string, action: CourseStatus) => Promise<void>;
+  deleteCourseThumbnail: (
+    id: string,
+    thumbnailPublicId: string,
+  ) => Promise<void>;
 }
 
 export const useCourseStore = create<CourseState>((set, get) => ({
@@ -105,9 +111,9 @@ export const useCourseStore = create<CourseState>((set, get) => ({
     }
   },
 
-  deleteCourse: async (id) => {
+  deleteCourse: async (id, action) => {
     try {
-      await deleteCourse(id);
+      await deleteCourse(id, action);
 
       // Remove from UI immediately
       set((state) => ({
@@ -115,6 +121,14 @@ export const useCourseStore = create<CourseState>((set, get) => ({
           (c) => c._id !== id && (c as any)._id !== id,
         ),
       }));
+    } catch (error: any) {
+      throw error;
+    }
+  },
+
+  deleteCourseThumbnail: async (id, thumbnailPublicId) => {
+    try {
+      await deleteCourseThumbnail(id, thumbnailPublicId);
     } catch (error: any) {
       throw error;
     }

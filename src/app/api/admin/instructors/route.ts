@@ -1,4 +1,5 @@
 import connectDB from "@/lib/db";
+import { handleApiError } from "@/lib/handle-api-error";
 import { getCurrentAdmin } from "@/middlewares/admin.middleware";
 import Instructor from "@/models/instructor.model";
 import { NextRequest, NextResponse } from "next/server";
@@ -12,12 +13,19 @@ export async function POST(req: NextRequest) {
 
     const {
       fullName,
+      email,
+      phone,
       designation,
       headline,
       bio,
       experienceYears,
+
       profileImage,
+      profileImagePublicId,
+
       coverImage,
+      coverImagePublicId,
+
       linkedinUrl,
       youtubeUrl,
       websiteUrl,
@@ -53,16 +61,21 @@ export async function POST(req: NextRequest) {
         { status: 409 },
       );
     }
-
     const instructor = await Instructor.create({
       fullName,
+      email,
+      phone,
       slug,
       designation,
       headline,
       bio,
       experienceYears,
+
       profileImage,
+      profileImagePublicId,
       coverImage,
+      coverImagePublicId,
+
       linkedinUrl,
       youtubeUrl,
       websiteUrl,
@@ -127,15 +140,6 @@ export async function GET(req: NextRequest) {
   } catch (error) {
     console.error(error);
 
-    return NextResponse.json(
-      {
-        success: false,
-        message:
-          error instanceof Error ? error.message : "Something went wrong",
-      },
-      {
-        status: 500,
-      },
-    );
+    return handleApiError(error);
   }
 }
