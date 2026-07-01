@@ -15,6 +15,8 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { uploadCertificate } from "@/lib/upload-certificate";
 import { generateCertificateBuffer } from "@/lib/generate-certificate";
+import { generateCertificatePdf } from "@/lib/certificate";
+import CertificateTemplate from "@/models/certificate-template.model";
 
 function generateCertificateNumber() {
   return "EDT-" + Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -126,13 +128,35 @@ export async function POST(req: NextRequest) {
     }
     const certificateNumber = generateCertificateNumber();
 
-    const pdfBuffer = await generateCertificateBuffer(
-      user.fullname,
+    const template = await CertificateTemplate.findOne({ isDefault: true });
+
+    if (!template) {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            "Certificate template is not configured. Please upload a template in admin panel.",
+        },
+        { status: 400 },
+      );
+    }
+
+    const templateUrl =
+      template.backgroundUrl ?? process.env.DEFAULT_TEMPLATE_URL ?? "";
+
+    // 2. Certificate PDF generate karein (pdf-lib wala)
+    const pdfBuffer = await generateCertificatePdf(
+      user.fullName,
       course.title,
       certificateNumber,
+      templateUrl,
+      enrollment?.enrolledAt,
     );
 
-    const storageKey = await uploadCertificate(pdfBuffer, certificateNumber);
+    const storageKey = await uploadCertificate(
+      Buffer.from(pdfBuffer),
+      certificateNumber,
+    );
 
     const certificate = await Certificate.create({
       user: user._id,
@@ -148,9 +172,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         success: true,
-
         message: "Certificate generated successfully",
-
         certificate,
       },
       {

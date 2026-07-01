@@ -10,6 +10,7 @@ import {
   X,
 } from "lucide-react";
 import { DynamicButton } from "@/components/ui/DynamicButton";
+import { Dialog, DialogPortal } from "./dialog";
 
 export type ConfirmVariant = "danger" | "warning" | "info" | "success";
 
@@ -110,65 +111,69 @@ export function ConfirmDialog({
 
       <AnimatePresence>
         {isOpen && (
-          <div
-            className={`fixed inset-0 z-[999999999999] flex items-center justify-center p-4 ${className}`}
-          >
-            {/* Backdrop */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={handleClose}
-              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-            />
-
-            {/* Modal Content */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              transition={{ duration: 0.2, ease: "easeOut" }}
-              className="relative w-full max-w-md bg-white dark:bg-[#111] rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden z-10"
-            >
-              <div className="p-6">
-                <div className="flex items-start gap-4">
-                  <div
-                    className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${currentConfig.iconBg}`}
-                  >
-                    <Icon size={24} className={currentConfig.iconColor} />
-                  </div>
-                  <div className="pt-1">
-                    <h3 className="text-lg font-bold text-slate-900 dark:text-white leading-none">
-                      {title}
-                    </h3>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
-                      {description}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Actions Footer */}
-              <div className="p-5 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-[#0A0A0A] flex items-center justify-end gap-3">
-                <DynamicButton
-                  variant="outline"
+          <Dialog open={isOpen} onOpenChange={setIsOpen}>
+            <DialogPortal>
+              <div
+                className={`fixed inset-0 z-[999999999999] flex items-center justify-center p-4 ${className}`}
+              >
+                {/* Backdrop */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
                   onClick={handleClose}
-                  disabled={isLoading}
-                >
-                  {cancelText}
-                </DynamicButton>
+                  className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                />
 
-                <DynamicButton
-                  variant={currentConfig.btnVariant}
-                  onClick={handleConfirm}
-                  isLoading={isLoading}
-                  disabled={isLoading}
+                {/* Modal Content */}
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                  transition={{ duration: 0.2, ease: "easeOut" }}
+                  className="relative w-full max-w-md bg-white dark:bg-[#111] rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden z-9999999"
                 >
-                  {confirmText}
-                </DynamicButton>
+                  <div className="p-6">
+                    <div className="flex items-start gap-4">
+                      <div
+                        className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${currentConfig.iconBg}`}
+                      >
+                        <Icon size={24} className={currentConfig.iconColor} />
+                      </div>
+                      <div className="pt-1">
+                        <h3 className="text-lg font-bold text-slate-900 dark:text-white leading-none">
+                          {title}
+                        </h3>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
+                          {description}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Actions Footer */}
+                  <div className="p-5 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-[#0A0A0A] flex items-center justify-end gap-3">
+                    <DynamicButton
+                      variant="outline"
+                      onClick={handleClose}
+                      disabled={isLoading}
+                    >
+                      {cancelText}
+                    </DynamicButton>
+
+                    <DynamicButton
+                      variant={currentConfig.btnVariant}
+                      onClick={handleConfirm}
+                      isLoading={isLoading}
+                      disabled={isLoading}
+                    >
+                      {confirmText}
+                    </DynamicButton>
+                  </div>
+                </motion.div>
               </div>
-            </motion.div>
-          </div>
+            </DialogPortal>
+          </Dialog>
         )}
       </AnimatePresence>
     </>

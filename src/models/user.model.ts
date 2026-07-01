@@ -54,6 +54,7 @@ const userSchema = new mongoose.Schema<IUser>(
     username: {
       type: String,
       unique: true,
+      lowercase: true,
       sparse: true,
       trim: true,
       maxlength: 150,

@@ -35,7 +35,6 @@ export function InstructorCard({ instructor, onEdit }: InstructorCardProps) {
       {
         showToast: true,
         successMsg: "Instructor deleted successfully",
-        // 🟢 Will display the backend error if instructor has assigned courses
         errorMsg: (err) =>
           err?.response?.data?.message || "Failed to delete instructor",
       },

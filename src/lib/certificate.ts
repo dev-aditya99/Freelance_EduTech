@@ -1,136 +1,72 @@
-import {
-    PDFDocument,
-    StandardFonts,
-    rgb,
-} from "pdf-lib";
+import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
+import fetch from "node-fetch";
+import { format } from "date-fns";
 
 export async function generateCertificatePdf(
-    studentName: string,
-    courseTitle: string,
-    certificateNumber: string
+  studentName: string,
+  courseTitle: string,
+  certificateNumber: string,
+  templateUrl: string,
+  enrolledAt: Date,
 ) {
-    const pdf =
-        await PDFDocument.create();
+  const enrolledDate = format(new Date(enrolledAt), "dd MMMM yyyy");
+  const issuedDate = format(new Date(Date.now()), "dd MMMM yyyy");
+  const pdfDoc = await PDFDocument.create();
+  const templateImageBytes = await fetch(templateUrl).then((res) =>
+    res.arrayBuffer(),
+  );
 
-    const page =
-        pdf.addPage([842, 595]);
+  // PNG ya JPG ke hisaab se embed karein
+  const templateImage = await pdfDoc.embedPng(templateImageBytes);
 
-    const titleFont =
-        await pdf.embedFont(
-            StandardFonts.HelveticaBold
-        );
+  const page = pdfDoc.addPage([842, 595]); // Landscape A4
+  const { width, height } = page.getSize();
 
-    const normalFont =
-        await pdf.embedFont(
-            StandardFonts.Helvetica
-        );
+  // 1. Draw Background Image
+  page.drawImage(templateImage, { x: 0, y: 0, width, height });
 
-    page.drawRectangle({
-        x: 20,
-        y: 20,
-        width: 802,
-        height: 555,
-        borderWidth: 3,
-        borderColor: rgb(0, 0, 0),
-        color: rgb(1, 1, 1),
-    });
+  // 2. Embed Fonts
+  const titleFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+  const normalFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
 
-    page.drawText(
-        "EDTECH",
-        {
-            x: 370,
-            y: 540,
-            size: 18,
-            font: titleFont,
-        }
-    );
+  // 3. Draw Text (Coordinates yahan adjust kiye hain)
+  // Student Name (Center aligned logic)
+  page.drawText(studentName.toUpperCase(), {
+    x: 361 - studentName.length * 6, // Roughly centering based on length
+    y: 291,
+    size: 30,
+    font: titleFont,
+    color: rgb(0.1, 0.1, 0.3),
+  });
 
-    page.drawText(
-        "CERTIFICATE OF COMPLETION",
-        {
-            x: 220,
-            y: 480,
-            size: 28,
-            font: titleFont,
-        }
-    );
+  // Course Title
+  page.drawText(courseTitle, {
+    x: 391 - courseTitle.length * 4,
+    y: 261,
+    size: 18,
+    font: titleFont,
+    color: rgb(0, 0, 0),
+  });
 
-    page.drawText(
-        "This Certificate Is Proudly Awarded To",
-        {
-            x: 245,
-            y: 420,
-            size: 16,
-            font: normalFont,
-        }
-    );
+  const timeText = `Between ${enrolledDate} to ${issuedDate}`;
 
-    page.drawText(
-        studentName,
-        {
-            x: 260,
-            y: 370,
-            size: 26,
-            font: titleFont,
-        }
-    );
+  // Course Time timeText
+  page.drawText(timeText, {
+    x: 418 - timeText.length * 4,
+    y: 160,
+    size: 15,
+    font: titleFont,
+    color: rgb(0, 0, 0),
+  });
 
-    page.drawText(
-        "For Successfully Completing",
-        {
-            x: 275,
-            y: 310,
-            size: 16,
-            font: normalFont,
-        }
-    );
+  // Certificate Number (Bottom left)
+  page.drawText(`Certificate No: ${certificateNumber}`, {
+    x: 50,
+    y: 50,
+    size: 10,
+    font: normalFont,
+    color: rgb(0.3, 0.3, 0.3),
+  });
 
-    page.drawText(
-        courseTitle,
-        {
-            x: 220,
-            y: 260,
-            size: 24,
-            font: titleFont,
-        }
-    );
-
-    page.drawText(
-        `Issued On: ${new Date().toLocaleDateString()}`,
-        {
-            x: 60,
-            y: 80,
-            size: 12,
-            font: normalFont,
-        }
-    );
-
-    page.drawText(
-        `Certificate No: ${certificateNumber}`,
-        {
-            x: 60,
-            y: 55,
-            size: 12,
-            font: normalFont,
-        }
-    );
-
-    page.drawText(
-        "Authorized Signature",
-        {
-            x: 620,
-            y: 80,
-            size: 12,
-            font: normalFont,
-        }
-    );
-
-    page.drawLine({
-        start: { x: 600, y: 100 },
-        end: { x: 760, y: 100 },
-        thickness: 1,
-        color: rgb(0, 0, 0),
-    });
-
-    return await pdf.save();
+  return await pdfDoc.save();
 }

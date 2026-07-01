@@ -9,6 +9,7 @@ import { useInstructorStore } from "@/store/instructor.store";
 import { IInstructor } from "@/types/instructor.types";
 import { uploadImage } from "@/services/upload.service";
 import toast from "react-hot-toast";
+import { instructorSchema } from "@/validations/instructor.schema";
 
 interface InstructorModalProps {
   isOpen: boolean;
@@ -168,6 +169,14 @@ export function InstructorModal({
 
   // Save Instructor
   const handleSubmit = async () => {
+    const validationResult = instructorSchema.safeParse(formData);
+
+    if (!validationResult.success) {
+      const firstErrorMessage = validationResult.error.issues[0].message;
+      toast.error(firstErrorMessage);
+      return;
+    }
+
     if (!formData.fullName.trim()) return;
 
     await execute(

@@ -61,6 +61,8 @@ export interface ICourse extends Document {
   status: CourseStatus;
   isPublished: boolean;
 
+  validityInDays?: number | null;
+
   createdBy: mongoose.Types.ObjectId;
 
   createdAt: Date;
@@ -147,7 +149,7 @@ const courseSchema = new Schema<ICourse>(
     searchLang: {
       type: String,
       default: "none",
-      select: false, // query me by default include nahi hoga
+      select: false,
     },
 
     isFree: {
@@ -226,6 +228,11 @@ const courseSchema = new Schema<ICourse>(
       type: String,
       enum: Object.values(CourseStatus),
       default: CourseStatus.DRAFT,
+    },
+
+    validityInDays: {
+      type: Number,
+      default: null, // Default lifetime
     },
 
     isPublished: {

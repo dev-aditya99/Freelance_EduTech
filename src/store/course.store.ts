@@ -20,8 +20,10 @@ interface CourseState {
   // Local Filters State
   searchQuery: string;
   statusFilter: string;
+  currentPage: number;
   setSearchQuery: (query: string) => void;
   setStatusFilter: (status: string) => void;
+  setPage: (page: number) => void;
 
   // Async API Actions
   fetchCourses: (params?: any) => Promise<void>;
@@ -41,12 +43,17 @@ export const useCourseStore = create<CourseState>((set, get) => ({
   pagination: null,
   isLoading: false,
   error: null,
-
   searchQuery: "",
   statusFilter: "ALL",
+  currentPage: 1,
 
-  setSearchQuery: (query) => set({ searchQuery: query }),
-  setStatusFilter: (status) => set({ statusFilter: status }),
+  setSearchQuery: (query) => set({ searchQuery: query, currentPage: 1 }),
+  setStatusFilter: (status) => set({ statusFilter: status, currentPage: 1 }),
+
+  setPage: (page) => {
+    set({ currentPage: page });
+    get().fetchCourses();
+  },
 
   fetchCourses: async (params = {}) => {
     set({
@@ -55,7 +62,10 @@ export const useCourseStore = create<CourseState>((set, get) => ({
     });
 
     try {
-      const data = await getCourses(params);
+      const { currentPage } = get();
+      const queryParams = { ...params, page: currentPage };
+
+      const data = await getCourses(queryParams);
       const courses = data.courses || [];
 
       set({

@@ -30,9 +30,7 @@ export async function POST(req: NextRequest) {
 
     const course = await Course.findOne({
       _id: courseId,
-
       status: CourseStatus.PUBLISHED,
-
       isPublished: true,
     });
 
@@ -46,6 +44,13 @@ export async function POST(req: NextRequest) {
           status: 404,
         },
       );
+    }
+
+    let expiresAt = null;
+
+    if (course.validityInDays) {
+      expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + course.validityInDays);
     }
 
     // Free Courses Only
@@ -82,9 +87,8 @@ export async function POST(req: NextRequest) {
     // Create Enrollment
     await Enrollment.create({
       user: user._id,
-
       course: course._id,
-
+      expiresAt,
       status: EnrollmentStatus.ACTIVE,
     });
 
@@ -98,7 +102,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         success: true,
-
         message: "Enrolled successfully.",
       },
       {
